@@ -1,16 +1,38 @@
 pragma solidity ^0.4.17;
 
 contract Music {
-    // store song name
-    // read song name
+    /* Model a SongChoice */
+    struct SongChoice {
+        uint id;
+        string name;
+        uint voteCount;
+    }
+    
+    // Store a @songchoices
+    // Fetch @SongName
+    mapping(uint => SongChoice) public songChoices;
+    // Store songChoices count
+    uint public songChoicesCount;
 
-    // state variable that can be stored as string
-    string public songName;
-
-    // constructor to set value of variable song name
+    // Constructor to set value of variable song name
+    // Keeps track of how many song choices there are 
     constructor () public {
-        // songName is a state variable
-        songName = "songName1";
+        addSongChoice("SongChoice 1");
+        addSongChoice("SongChoice 2");   
 
     }
+
+    /* We add a different @songChoice here and increment */
+    function addSongChoice (string _name) private {
+        // increment songChoice count
+        songChoicesCount ++;
+        /* Create @songChoice and then assign it to new 
+        songchoice and assign the id, name and voteCount */
+        songChoices[songChoicesCount] = SongChoice(songChoicesCount, _name, 0);
+    }
+
+
+    
+
+
 }
