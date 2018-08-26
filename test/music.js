@@ -66,5 +66,23 @@ checking that the count is correct.
       });
 
 
+      
+      it("throws an exception for invalid song choice", function() {
+        return Music.deployed().then(function(instance) {
+          musicInstance = instance;
+          return musicInstance.vote(99, { from: accounts[1] })
+        }).then(assert.fail).catch(function(error) {
+          assert(error.message.indexOf('revert') >= 0, "error message must contain revert");
+          return musicInstance.songChoices(1);
+        }).then(function(songchoice1) {
+          var voteCount = songchoice1[2];
+          assert.equal(voteCount, 1, "Song choice 1 did not receive any votes");
+          return musicInstance.songChoices(2);
+        }).then(function(songchoice2) {
+          var voteCount = songchoice2[2];
+          assert.equal(voteCount, 0, "Song choice 2 did not receive any votes");
+        });
+      });
+
 
 });

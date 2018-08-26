@@ -44,15 +44,16 @@ contract Music {
 
     function vote (uint _songId) public {
         // require that they havent voted before
-        require(!voters[msg.sender]);
+        require(!voters[msg.sender], "Sender already voted!");
 
         // require a validate song
-        require(_songId > 0 && _songId <= songChoicesCount);
+        require(_songId > 0 && _songId <= songChoicesCount, "This is not a validated song!");
 
         //record that a voter has voted
+        voters[msg.sender] = true;
+
         songChoices[_songId].voteCount ++;
 
-        // trigger voted event
-        votedEvent(_songId);
+        
     }
 }
