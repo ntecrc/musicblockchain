@@ -8,11 +8,22 @@ contract Music {
         uint voteCount;
     }
     
+    // Store accounts that have voted
+    mapping(address => bool) public voters;
+
+
     // Store a @songchoices
     // Fetch @SongName
     mapping(uint => SongChoice) public songChoices;
     // Store songChoices count
     uint public songChoicesCount;
+
+    // voted for song
+    event votedEvent (
+        uint indexed _songId
+    );
+
+
 
     // Constructor to set value of variable song name
     // Keeps track of how many song choices there are 
@@ -31,8 +42,17 @@ contract Music {
         songChoices[songChoicesCount] = SongChoice(songChoicesCount, _name, 0);
     }
 
+    function vote (uint _songId) public {
+        // require that they havent voted before
+        require(!voters[msg.sender]);
 
-    
+        // require a validate song
+        require(_songId > 0 && _songId <= songChoicesCount);
 
+        //record that a voter has voted
+        songChoices[_songId].voteCount ++;
 
+        // trigger voted event
+        votedEvent(_songId);
+    }
 }

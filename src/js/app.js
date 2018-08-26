@@ -1,107 +1,126 @@
 App = {
   web3Provider: null,
   contracts: {},
+  account: '0x0',
+  hasVoted: false,
 
   init: function() {
-    // Load pets.
-    $.getJSON('../pets.json', function(data) {
-      var petsRow = $('#petsRow');
-      var petTemplate = $('#petTemplate');
-
-      for (i = 0; i < data.length; i ++) {
-        petTemplate.find('.panel-title').text(data[i].name);
-        petTemplate.find('img').attr('src', data[i].picture);
-        petTemplate.find('.pet-breed').text(data[i].breed);
-        petTemplate.find('.pet-age').text(data[i].age);
-        petTemplate.find('.pet-location').text(data[i].location);
-        petTemplate.find('.btn-adopt').attr('data-id', data[i].id);
-
-        petsRow.append(petTemplate.html());
-      }
-    });
-
     return App.initWeb3();
   },
 
+  /* Initializes Web3 and connects it to the blockchain */
   initWeb3: function() {
-    
-    // Is there an injected web3 instance?
-if (typeof web3 !== 'undefined') {
-  App.web3Provider = web3.currentProvider;
-} else {
-  // If no injected web3 instance is detected, fall back to Ganache
-  App.web3Provider = new Web3.providers.HttpProvider('http://localhost:7545');
-}
-web3 = new Web3(App.web3Provider);
-
+    // TODO: refactor conditional
+    if (typeof web3 !== 'undefined') {
+      // If a web3 instance is already provided by Meta Mask.
+      App.web3Provider = web3.currentProvider;
+      web3 = new Web3(web3.currentProvider);
+    } else {
+      // Specify default instance if no web3 instance provided
+      App.web3Provider = new Web3.providers.HttpProvider('http://localhost:7545');
+      web3 = new Web3(App.web3Provider);
+    }
     return App.initContract();
   },
 
   initContract: function() {
-    $.getJSON('Adoption.json', function(data) {
-      // Get the necessary contract artifact file and instantiate it with truffle-contract
-      var AdoptionArtifact = data;
-      App.contracts.Adoption = TruffleContract(AdoptionArtifact);
-    
-      // Set the provider for our contract
-      App.contracts.Adoption.setProvider(App.web3Provider);
-    
-      // Use our contract to retrieve and mark the adopted pets
-      return App.markAdopted();
+    // gets the json file from src build contracts filepath can be see through server syn file
+    $.getJSON("Music.json", function(music) {
+      // Instantiate a new truffle contract from the artifact
+      App.contracts.Music = TruffleContract(music);
+      // Connect provider to interact with contract
+      App.contracts.Music.setProvider(App.web3Provider);
+
+      App.listenForEvents();
+
+      return App.render();
+    });
+  },
+
+  // Listen for events emitted from the contract
+  listenForEvents: function() {
+    App.contracts.Music.deployed().then(function(instance) {
+      // Restart Chrome if you are unable to receive this event
+      // This is a known issue with Metamask
+      // https://github.com/MetaMask/metamask-extension/issues/2393
+      instance.votedEvent({}, {
+        fromBlock: 0,
+        toBlock: 'latest'
+      }).watch(function(error, event) {
+        console.log("event triggered", event)
+        // Reload when a new vote is recorded
+        App.render();
+      });
+    });
+  },
+
+  render: function() {
+    var musicInstance;
+    var loader = $("#loader");
+    var content = $("#content");
+
+    loader.show();
+    content.hide();
+
+    // Load account data
+    web3.eth.getCoinbase(function(err, account) {
+      if (err === null) {
+        App.account = account;
+        $("#accountAddress").html("Your Account: " + account);
+      }
     });
 
-    return App.bindEvents();
+    // Load contract data
+    App.contracts.Music.deployed().then(function(instance) {
+      musicInstance = instance;
+      return musicInstance.songChoicesCount();
+    }).then(function(songChoicesCount) {
+      var songChoiceResults = $("#songChoiceResults");
+      songChoiceResults.empty();
+
+      var songSelect = $('#songSelect');
+      songSelect.empty();
+
+      for (var i = 1; i <= songChoicesCount; i++) {
+        musicInstance.songChoices(i).then(function(songchoice) {
+          var id = songchoice[0];
+          var name = songchoice[1];
+          var voteCount = songchoice[2];
+
+          // Render SongChoice Result
+          var songChoiceTemplate = "<tr><th>" + id + "</th><td>" + name + "</td><td>" + voteCount + "</td></tr>"
+          songChoiceResults.append(songChoiceTemplate);
+
+          // Render Song choice option
+          var songOption = "<option value='" + id + "' >" + name + "</ option>"
+          songSelect.append(songOption);
+        });
+      }
+      return musicInstance.voters(App.account);
+    }).then(function(hasVoted) {
+      // Do not allow a user to vote
+      if(hasVoted) {
+        $('form').hide();
+      }
+      loader.hide();
+      content.show();
+    }).catch(function(error) {
+      console.warn(error);
+    });
   },
 
-  bindEvents: function() {
-    $(document).on('click', '.btn-adopt', App.handleAdopt);
-  },
-
-  markAdopted: function(adopters, account) {
-    var adoptionInstance;
-
-App.contracts.Adoption.deployed().then(function(instance) {
-  adoptionInstance = instance;
-
-  return adoptionInstance.getAdopters.call();
-}).then(function(adopters) {
-  for (i = 0; i < adopters.length; i++) {
-    if (adopters[i] !== '0x0000000000000000000000000000000000000000') {
-      $('.panel-pet').eq(i).find('button').text('Success').attr('disabled', true);
-    }
+  castVote: function() {
+    var songId = $('#songSelect').val();
+    App.contracts.Music.deployed().then(function(instance) {
+      return instance.vote(songId, { from: App.account });
+    }).then(function(result) {
+      // Wait for votes to update
+      $("#content").hide();
+      $("#loader").show();
+    }).catch(function(err) {
+      console.error(err);
+    });
   }
-}).catch(function(err) {
-  console.log(err.message);
-});
-  },
-
-  handleAdopt: function(event) {
-    event.preventDefault();
-
-    var petId = parseInt($(event.target).data('id'));
-
-    var adoptionInstance;
-
-web3.eth.getAccounts(function(error, accounts) {
-  if (error) {
-    console.log(error);
-  }
-
-  var account = accounts[0];
-
-  App.contracts.Adoption.deployed().then(function(instance) {
-    adoptionInstance = instance;
-
-    // Execute adopt as a transaction by sending account
-    return adoptionInstance.adopt(petId, {from: account});
-  }).then(function(result) {
-    return App.markAdopted();
-  }).catch(function(err) {
-    console.log(err.message);
-  });
-});
-  }
-
 };
 
 $(function() {
