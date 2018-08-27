@@ -13,7 +13,7 @@ traceable and also allow radio stations to monetize with ether.
 # How To:
 
 ## LocalHost:
-1. ensure that your ports are correct 7545.
+1. ensure that your ports are correct ie. 7545/8545.
 2. Metamask needs to be on localhost: { enter port# }
 3. Start Ganache
 4. Test the Dapp
