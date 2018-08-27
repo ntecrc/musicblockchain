@@ -45,4 +45,8 @@ TODO: proper landing page.
 
 TODO: enable API music list calls and voting functions
 
-T
+#About Me:
+** A little about me, I am a current student as I continue learning and expanding my knowledge.  I would love to apply what I have 
+learned in this course especially in healthcare where I have quite a few years of experience as a nurse.
+
+Thank you for taking the time to grade my project.
