@@ -32,7 +32,7 @@ however this is best accessed through localhost. As always ensure metamask is en
 The file bs-config.json points to the 'Music.json' that the npm dev attempts to locate.  I was having issues with this file being relocated
 to a different route.
 
-# example:
+## example:
 {
   "server": {
     "baseDir": ["./src", "./src/build/contracts"]
@@ -41,9 +41,9 @@ to a different route.
 
 I had to change the route sometimes. Also I had to change the physical path of 'Build'
 
-## TODO: proper landing page.
+### TODO: proper landing page.
 
-## TODO: enable API music list calls and voting functions
+### TODO: enable API music list calls and voting functions
 
 # About Me:
 ** A little about me, I am a current student as I continue learning and expanding my knowledge.  I would love to apply what I have 
